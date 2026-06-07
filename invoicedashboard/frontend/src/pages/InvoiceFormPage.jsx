@@ -13,6 +13,19 @@ const EMPTY = {
   status: 'Draft', issueDate: '', dueDate: '',
 };
 
+function Field({ label, children, hint, error }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <label style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        {label}
+      </label>
+      {children}
+      {error && <span style={{ fontSize: '11px', color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{error}</span>}
+      {hint && !error && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{hint}</span>}
+    </div>
+  );
+}
+
 export default function InvoiceFormPage({ mode = 'create' }) {
   const navigate      = useNavigate();
   const { id }        = useParams();
@@ -76,17 +89,6 @@ export default function InvoiceFormPage({ mode = 'create' }) {
     }
   };
 
-  const Field = ({ label, name, children, hint }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <label style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-        {label}
-      </label>
-      {children}
-      {errors[name] && <span style={{ fontSize: '11px', color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{errors[name]}</span>}
-      {hint && !errors[name] && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{hint}</span>}
-    </div>
-  );
-
   return (
     <div>
       <PageHeader
@@ -96,7 +98,7 @@ export default function InvoiceFormPage({ mode = 'create' }) {
 
       <div style={{ maxWidth: '560px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-        <Field label="Customer" name="customerId">
+        <Field label="Customer" name="customerId" error={errors.customerId}>
           <select name="customerId" value={form.customerId} onChange={handleChange}>
             <option value="">Select a customer...</option>
             {customers.map(c => (
@@ -106,11 +108,11 @@ export default function InvoiceFormPage({ mode = 'create' }) {
         </Field>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <Field label="Amount (₹)" name="amount">
+          <Field label="Amount (₹)" name="amount" error={errors.amount}>
             <input type="number" name="amount" value={form.amount} onChange={handleChange} placeholder="0.00" min="0" step="0.01" />
           </Field>
 
-          <Field label="Tax Rate" name="taxRate">
+          <Field label="Tax Rate" name="taxRate" error={errors.taxRate}>
             <select name="taxRate" value={form.taxRate} onChange={handleChange}>
               {TAX_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
             </select>
@@ -139,17 +141,17 @@ export default function InvoiceFormPage({ mode = 'create' }) {
           </div>
         )}
 
-        <Field label="Status" name="status">
+        <Field label="Status" name="status" error={errors.status}>
           <select name="status" value={form.status} onChange={handleChange}>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </Field>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <Field label="Issue Date" name="issueDate">
+          <Field label="Issue Date" name="issueDate" error={errors.issueDate}>
             <input type="date" name="issueDate" value={form.issueDate} onChange={handleChange} />
           </Field>
-          <Field label="Due Date" name="dueDate">
+          <Field label="Due Date" name="dueDate" error={errors.dueDate}>
             <input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} />
           </Field>
         </div>

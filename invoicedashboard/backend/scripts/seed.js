@@ -19,38 +19,32 @@ const seed = async () => {
   const records = JSON.parse(raw);
   console.log(`📦 Loaded ${records.length} records from seed-data.json`);
 
-  // ── Step 1: upsert unique customers ──────────────────────
-  const customerMap = new Map(); // name → _id
-
   const uniqueCustomers = [
     ...new Map(records.map((r) => [r.customer, r])).values(),
   ].map((r) => ({ name: r.customer, company: r.company }));
 
-  let custInserted = 0;
-  let custUpdated = 0;
+  const customerResult = await Customer.bulkWrite(
+    uniqueCustomers.map((c) => ({
+      updateOne: {
+        filter: { name: c.name },
+        update: { $set: c },
+        upsert: true,
+      },
+    }))
+  );
 
-  for (const c of uniqueCustomers) {
-    const doc = await Customer.findOneAndUpdate(
-      { name: c.name },
-      { $set: c },
-      { upsert: true, new: true }
-    );
-    customerMap.set(c.name, doc._id);
-    if (doc.createdAt?.getTime() === doc.updatedAt?.getTime()) {
-      custInserted++;
-    } else {
-      custUpdated++;
-    }
-  }
+  const customers = await Customer.find({
+    name: { $in: uniqueCustomers.map((c) => c.name) },
+  });
+  const customerMap = new Map(customers.map((c) => [c.name, c._id]));
 
   console.log(
-    `👤 Customers — ${custInserted} inserted, ${custUpdated} updated`
+    `👤 Customers — ${customerResult.upsertedCount} inserted, ${customerResult.modifiedCount} updated`
   );
 
   // ── Step 2: upsert invoices ───────────────────────────────
-  let invInserted = 0;
-  let invUpdated = 0;
   let invErrors = 0;
+  const invoiceOps = [];
 
   for (const r of records) {
     const customerId = customerMap.get(r.customer);
@@ -74,26 +68,21 @@ const seed = async () => {
       dueDate: new Date(r.dueDate),
     };
 
-    try {
-      const before = await Invoice.findOne({ invoiceId: r.invoiceId });
-      await Invoice.findOneAndUpdate(
-        { invoiceId: r.invoiceId },
-        { $set: payload },
-        { upsert: true, new: true }
-      );
-      if (before) {
-        invUpdated++;
-      } else {
-        invInserted++;
-      }
-    } catch (err) {
-      console.error(`❌ Failed on ${r.invoiceId}: ${err.message}`);
-      invErrors++;
-    }
+    invoiceOps.push({
+      updateOne: {
+        filter: { invoiceId: r.invoiceId },
+        update: { $set: payload },
+        upsert: true,
+      },
+    });
   }
 
+  const invoiceResult = invoiceOps.length
+    ? await Invoice.bulkWrite(invoiceOps, { ordered: false })
+    : { upsertedCount: 0, modifiedCount: 0 };
+
   console.log(
-    `🧾 Invoices — ${invInserted} inserted, ${invUpdated} updated, ${invErrors} errors`
+    `🧾 Invoices — ${invoiceResult.upsertedCount} inserted, ${invoiceResult.modifiedCount} updated, ${invErrors} errors`
   );
   console.log('✅ Seed complete');
   await mongoose.disconnect();

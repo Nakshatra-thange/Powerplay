@@ -28,7 +28,6 @@ export default function InvoicesPage() {
   const LIMIT = 20;
 
   const fetchInvoices = useCallback(async () => {
-    setLoading(true);
     try {
       const params = { page, limit: LIMIT, ...sort };
       Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v; });
@@ -40,7 +39,10 @@ export default function InvoicesPage() {
     finally { setLoading(false); }
   }, [page, filters, sort]);
 
-  useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+  useEffect(() => {
+    const id = window.setTimeout(fetchInvoices, 0);
+    return () => window.clearTimeout(id);
+  }, [fetchInvoices]);
   useEffect(() => { getCustomers().then(setCustomers).catch(() => {}); }, []);
 
   const handleSort = (field) => {

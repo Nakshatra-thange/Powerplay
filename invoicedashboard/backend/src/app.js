@@ -16,9 +16,9 @@ if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 // ── Health check ──────────────────────────────────────────
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// ── Routes (wired in Phase 3) ─────────────────────────────
-// app.use('/api/invoices', require('./routes/invoices'));
-// app.use('/api/customers', require('./routes/customers'));
+// ── Routes ────────────────────────────────────────────────
+app.use('/api/invoices', require('./routes/invoices'));
+app.use('/api/customers', require('./routes/customers'));
 
 // ── Fallback handlers ─────────────────────────────────────
 app.use(notFound);
